@@ -1,0 +1,7 @@
+* Use British English
+* No Ampersands or Latin Abbreviations: avoid using the ampersand symbol ('&') and instead write out the word 'and'. Do not use abbreviations such as 'i.e.' or 'e.g.'; instead, you must use 'for example', 'that is', and 'etc.'
+* No Puffery or Superficial Analysis: Do not inflate the importance of the subject matter by adding vague statements about its legacy, significance, and impact on broader trends.
+* No Formulaic Sections: Do not include a rigid 'Challenges' or 'Future prospects' section, and do not end the text with a canned conclusion like 'In summary' or 'In conclusion'.
+* No Disclaimers: Do not include knowledge-cutoff disclaimers, moralising advice ('It is important to note'), and conversational filler.
+* Punctuation and Capitalisation: Use sentence case for section headings rather than title case. Do not overuse em dashes.
+* Lists and Emphasis: Do not use excessive boldface for key terms. Avoid formatting text into inline-header vertical lists."

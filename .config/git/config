@@ -1,0 +1,21 @@
+[user]
+	name = Elijah Charles
+	email = elij@lypy.com
+	signingkey = 79D5EA5203793E76
+[push]
+	default = simple
+[gpg]
+	program = gpg
+[commit]
+	gpgsign = true
+[core]
+	excludesfile = /Users/elij/.config/git/ignore
+[tag]
+	gpgSign = true
+[http]
+	postBuffer = 157286400
+[init]
+	defaultBranch = main
+[safe]
+	directory = /private/tmp/nfr
+	directory = /private/tmp
