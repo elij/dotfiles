@@ -47,8 +47,7 @@
 
   :hook
   ((org-mode . gptel-performance-mode)
-   (markdown-mode . gptel-performance-mode)
-   (gptel-post-response-functions . (lambda (_beg _end) (ignore-errors (ratex-refresh-previews)))))
+   (markdown-mode . gptel-performance-mode))
   
   :config
   (add-to-list 'gptel-prompt-prefix-alist '(markdown-ts-mode . "### "))
