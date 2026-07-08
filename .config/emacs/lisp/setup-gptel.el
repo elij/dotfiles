@@ -65,11 +65,11 @@
       :key "dummy"
       :request-params '(:thinking :json-false)
       :models '(
-                (gemma4-e2b)
-                (qwen-27b)
                 (qwen-35b
                  :capabilities (media)
-                 :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp")))))
+                 :mime-types ("image/jpeg" "image/png" "image/gif" "image/webp"))
+                (gemma4-e2b)
+                (qwen-27b))))
   
   (my/set-gptel-default-model))
 
