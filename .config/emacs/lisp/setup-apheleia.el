@@ -4,6 +4,8 @@
   :defer t
   :hook (window-setup . apheleia-global-mode)
   :config
+  (setf (alist-get 'rustfmt apheleia-formatters)
+        '("rustfmt" "--quiet" "--emit" "stdout" "--edition" "2024"))
   (dolist (mapping '((tsx-ts-mode . prettier)
                      (js-json-mode . prettier)
                      (js-mode . prettier)
