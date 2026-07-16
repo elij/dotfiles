@@ -14,15 +14,21 @@
                             (set-frame-parameter f 'alpha-background 0.7)
                             (set-frame-parameter f 'ns-alpha-elements '(ns-alpha-all)))
                           (delete-other-windows)
-                          (when (display-graphic-p f)
-                            (split-window-right)
+                          (switch-to-buffer (get-buffer-create "*GNU Emacs*"))
+                          (when-let* ((graphic (display-graphic-p f))
+                                      (right-window (split-window-right)))
+                            (set-window-buffer right-window (get-buffer-create "*scratch*"))
                             (balance-windows)))))
                     frame))
   :custom
   (ns-right-alternate-modifier 'none)
   :hook
-  ((after-make-frame-functions . my/layout-new-frame)
-   (window-setup . (lambda () (my/layout-new-frame (selected-frame)))))
+  ((after-make-frame-functions . (lambda (f) 
+                                   (when (display-graphic-p f) 
+                                     (my/layout-new-frame f))))
+   (window-setup . (lambda () 
+                     (when (display-graphic-p) 
+                       (my/layout-new-frame (selected-frame))))))
   :config
   (set-face-attribute 'default nil
                       :family "Iosevka Fixed"
