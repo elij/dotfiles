@@ -36,10 +36,10 @@
 
   (defun my/set-gptel-default-model ()
     (if (executable-find "llama-server")
-        (setq gptel-backend my-localai-backend 
-              gptel-model 'qwen-35b)
-      (setq gptel-backend my-gemini-backend 
-            gptel-model 'gemini-flash-lite-latest)))
+        (setq-default gptel-backend my-localai-backend 
+                      gptel-model 'qwen-35b)
+      (setq-default gptel-backend my-gemini-backend 
+                    gptel-model 'gemini-flash-lite-latest)))
 
   :custom
   (gptel-include-reasoning t)
