@@ -1,8 +1,7 @@
 ;; -*- lexical-binding: t; -*-
 
 (use-package ratex
-  :vc (:url "https://github.com/elij/ratex.el" 
-            :lisp-dir "lisp")
+  :vc (:url "https://github.com/elij/ratex.el")
   :after exec-path-from-shell
   :defer t
   :config
