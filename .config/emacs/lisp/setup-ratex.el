@@ -7,8 +7,8 @@
   :config
   (setq ratex-dark-render-color "white"
         ratex-light-render-color "black")
-  :hook ((markdown-mode . global-ratex-mode)
-         (markdown-ts-mode . global-ratex-mode)
+  :hook ((markdown-mode . ratex-mode)
+         (markdown-ts-mode . ratex-mode)
          (gptel-mode . (lambda ()
                          (add-hook 'gptel-post-response-functions
                                    (lambda (_beg _end)
