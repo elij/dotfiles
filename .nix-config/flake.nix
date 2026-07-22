@@ -63,6 +63,7 @@
         gnupg
         deno
         pandoc
+        (lib.lowPrio jdk8)
         jdk25_headless
         ghostscript
         jq

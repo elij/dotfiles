@@ -2,7 +2,6 @@
 
 (use-package rust-ts-mode
   :defer t
-  :mode ("\\.rs\\'" . rust-ts-mode)
-  :hook (rust-ts-mode . eglot-ensure))
+  :mode ("\\.rs\\'" . rust-ts-mode))
 
 (provide 'setup-rust-ts-mode)
