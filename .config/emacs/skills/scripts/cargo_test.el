@@ -2,7 +2,7 @@
                         "Run 'cargo test' to test the project."
                         :category "rust"
                         :args nil
-                        :command-fn (lambda (_payload)
+                        :command-fn (lambda (_payload _context _root)
                                       (make-macher-agent-process-response 
                                        :payload "rtk cargo test </dev/null 2>&1"))
                         :success-fn (lambda (output)

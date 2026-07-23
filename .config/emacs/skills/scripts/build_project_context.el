@@ -2,7 +2,7 @@
                         "Generate a read-only architectural map of the entire project. This returns structural context rather than compilable source code."
                         :category "context-builder"
                         :args nil
-                        :command-fn (lambda (_payload)
+                        :command-fn (lambda (_payload _context _root)
                                       (make-macher-agent-process-response 
                                        :payload "context-builder -y -f rs --signatures --ignore external --input . -o /dev/stdout </dev/null 2>&1"))
                         :success-fn (lambda (output)
