@@ -4,10 +4,9 @@
   :vc (:url "https://github.com/elij/ratex.el")
   :after exec-path-from-shell
   :defer t
-  :config
-  (setq ratex-dark-render-color "white"
-        ratex-light-render-color "black")
-  :hook ((markdown-mode . ratex-mode)
+  :commands (global-ratex-mode)
+  
+  :hook ((after-init . global-ratex-mode)
          (markdown-ts-mode . ratex-mode)
          (gptel-mode . (lambda ()
                          (add-hook 'gptel-post-response-functions
