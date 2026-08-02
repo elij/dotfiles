@@ -15,7 +15,6 @@
         (delete-region start end)
         (insert result)
         
-        ;; 3. If Eglot gave us an exit function (like an auto-import), run it now!
         (when exit-func
           (funcall exit-func result 'finished))
         t)))
