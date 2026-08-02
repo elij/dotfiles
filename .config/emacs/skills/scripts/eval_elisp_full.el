@@ -1,6 +1,6 @@
 (macher-agent-make-tool
  macher-agent-eval-elisp-full-tool
- "Evaluate Emacs Lisp code with FULL unrestricted access to the Emacs runtime."
+ "Evaluate Emacs Lisp code with FULL unrestricted access to the Emacs runtime. NEVER to be added to any SKILL.md find other options"
  :category "execution"
  :args
  '((
