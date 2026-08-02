@@ -2,6 +2,18 @@
 
 (use-package completion-preview
   :defer t
-  :hook (after-init . global-completion-preview-mode))
+  :hook (after-init . global-completion-preview-mode)
+
+  :preface
+  (defun my/completion-preview-to-fido ()
+    "Dismiss the inline preview and open our custom Fido minibuffer."
+    (interactive)
+    (completion-preview-active-mode -1)
+    (completion-at-point))
+
+  :bind (:map completion-preview-active-mode-map
+              ("<tab>" . my/completion-preview-to-fido)
+              ("TAB"   . my/completion-preview-to-fido)
+              ("<right>" . completion-preview-insert)))
 
 (provide 'setup-completion-preview)
