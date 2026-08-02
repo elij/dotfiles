@@ -4,12 +4,20 @@
   :ensure nil
   :preface
   (defun my/completion-in-region-minibuffer (start end collection &optional predicate)
-    "Divert `completion-at-point' to the minibuffer."
+    "Divert `completion-at-point' to the minibuffer, respecting Eglot/LSP metadata."
     (let* ((initial (buffer-substring-no-properties start end))
+
+           (exit-func (plist-get completion-extra-properties :exit-function))
+
            (result (completing-read "Complete: " collection predicate t initial)))
+      
       (when result
         (delete-region start end)
         (insert result)
+        
+        ;; 3. If Eglot gave us an exit function (like an auto-import), run it now!
+        (when exit-func
+          (funcall exit-func result 'finished))
         t)))
 
   :hook (minibuffer-setup . cursor-intangible-mode)

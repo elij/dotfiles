@@ -10,10 +10,14 @@
     (interactive)
     (completion-preview-active-mode -1)
     (completion-at-point))
-
-  :bind (:map completion-preview-active-mode-map
-              ("<tab>" . my/completion-preview-to-fido)
-              ("TAB"   . my/completion-preview-to-fido)
-              ("<right>" . completion-preview-insert)))
+  
+  :config
+  (add-to-list 'completion-category-overrides '(eglot-capf (styles flex-noinsert basic)))
+  
+  :bind (
+         :map completion-preview-active-mode-map
+         ("<tab>" . my/completion-preview-to-fido)
+         ("TAB"   . my/completion-preview-to-fido)
+         ("RET" . completion-preview-insert)))
 
 (provide 'setup-completion-preview)
