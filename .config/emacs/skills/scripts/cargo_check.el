@@ -1,17 +1,16 @@
-(macher-agent-make-tool
-    macher-agent-cargo-check-tool
-    "Run 'cargo check' to compile the project. This is used to ensure code is correct by \
-coders"
+(macher-agent-make-tool macher-agent-cargo-check-tool
+    "Run 'cargo check' inside the VFS."
   :category "execution"
   :args nil
   :command-fn
-  (lambda (_payload _context _root)
-    (make-macher-agent-process-response
-     :payload "rtk cargo check </dev/null 2>&1"))
+  (lambda (_payload context _root)
+    (macher-agent-call-with-strict-vfs-pipeline
+     context
+     (lambda ()
+       (let ((cmd "find . -name \"Cargo.toml\" -exec dirname {} \\; | head -n 1 | xargs -I {} sh -c 'cd {} && cargo check 2>&1'"))
+         (shell-command-to-string cmd)))))
   :success-fn
   (lambda (output)
-    (if (string-match-p "error\\[" output)
+    (if (string-match-p "\\(error:\\|could not compile\\)" output)
         output
-      (concat "SUCCESS: The code compiled perfectly with no errors.
-=== COMPILER OUTPUT ===
-" output))))
+      (concat "SUCCESS: Cargo check completed with no errors.\n\n=== OUTPUT ===\n" output))))

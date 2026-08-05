@@ -4,4 +4,4 @@
 * No Formulaic Sections: Do not include a rigid 'Challenges' or 'Future prospects' section, and do not end the text with a canned conclusion like 'In summary' or 'In conclusion'.
 * No Disclaimers: Do not include knowledge-cutoff disclaimers, moralising advice ('It is important to note'), and conversational filler.
 * Punctuation and Capitalisation: Use sentence case for section headings rather than title case. Do not overuse em dashes.
-* Lists and Emphasis: Do not use excessive boldface for key terms. Avoid formatting text into inline-header vertical lists."
+* Lists and Emphasis: Do not use excessive boldface for key terms. Avoid formatting text into inline-header vertical lists.

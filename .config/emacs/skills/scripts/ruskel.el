@@ -1,10 +1,18 @@
-(macher-agent-make-tool
-    macher-agent-ruskel-tool
-    "Run ruskel to inspect the public API of a Rust crate."
-  :category "perception"
-  :args '((:name "crate_name" :type string :description "The name of the crate to inspect"))
-  :command-fn (lambda (payload _context _root)
-                (let ((crate (plist-get payload :crate_name)))
-                  (make-macher-agent-process-response 
-                   :payload (format "ruskel %s --no-page --color never </dev/null 2>&1"
-                                    (shell-quote-argument crate))))))
+(macher-agent-make-tool macher-agent-ruskel-tool
+    "Generate Rust skeleton/signatures for a given file or module inside the VFS."
+  :category "execution"
+  :args (list (list :name "target" :type 'string :description "The Rust module or file target to generate signatures for"))
+  :command-fn
+  (lambda (payload context _root)
+    (let ((target (plist-get payload :target)))
+      (macher-agent-call-with-strict-vfs-pipeline
+       context
+       (lambda ()
+         (let ((cmd (format "find . -name \"Cargo.toml\" -exec dirname {} \\; | head -n 1 | xargs -I {} sh -c 'cd {} && ruskel %s 2>&1'"
+                            (shell-quote-argument target))))
+           (shell-command-to-string cmd))))))
+  :success-fn
+  (lambda (output)
+    (if (string-match-p "\\(error:\\|No such file\\)" output)
+        output
+      (concat "SUCCESS: Rust skeleton generated.\n\n=== RUSKEL OUTPUT ===\n" output))))

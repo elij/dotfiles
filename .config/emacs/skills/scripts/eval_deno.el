@@ -1,27 +1,14 @@
-(macher-agent-make-tool
- macher-agent-eval-deno-tool
- "Evaluate JavaScript or TypeScript code to perform maths operations, string manipulation, or data generation."
- :category "execution"
- :args
- '((
-    :name "code"
-    :type string
-    :description "The JavaScript or TypeScript code to evaluate. Use console.log() to output the final result."))
-
- :command-fn
- (lambda (payload _context _root)
-   (let* ((code (plist-get payload :code))
-          (temp-file (make-temp-file "macher-eval-" nil ".ts")))
-
-     (with-temp-file temp-file
-       (insert code))
-
-     (unwind-protect
-         (with-temp-buffer
-           (call-process "deno" nil t nil "run" temp-file)
-           (string-trim (buffer-string)))
-       (delete-file temp-file))))
-
- :success-fn
- (lambda (result _payload)
-   (format "EVALUATION RESULT:\n%s" result)))
+(macher-agent-make-tool macher-agent-eval-deno-tool
+    "Evaluate TypeScript or JavaScript using Deno inside the VFS."
+  :category "execution"
+  :args (list (list :name "script" :type 'string :description "The JavaScript or TypeScript code to evaluate"))
+  :command-fn
+  (lambda (payload context _root)
+    (let ((script (plist-get payload :script)))
+      (macher-agent-call-with-strict-vfs-pipeline context
+                                                  (lambda ()
+                                                    (let ((cmd (format "deno eval %s 2>&1" (shell-quote-argument script))))
+                                                      (shell-command-to-string cmd))))))
+  :success-fn
+  (lambda (output)
+    (concat "DENO OUTPUT:\n" output)))
