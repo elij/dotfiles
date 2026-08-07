@@ -1,5 +1,5 @@
 (macher-agent-make-tool macher-agent-buttercup-test-tool
-    "Run buttercup-run-discover to test the project. You must use this tool to test changes made in the VFS with write to workspace tools"
+    "Run buttercup-run-discover to test the project. You must use this tool to test changes made in the VFS with write to workspace tools. No other tool should be used for Elisp testsing."
   :category "execution"
   :args nil
   :command-fn
