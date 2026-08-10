@@ -9,7 +9,7 @@ compilable source code."
     (macher-agent-call-with-strict-vfs-pipeline
      context
      (lambda ()
-       (let ((cmd "ontext-builder -y -f rs --signatures --ignore external --input . -o /dev/stdout </dev/null 2>&1"))
+       (let ((cmd "context-builder -y -f rs --signatures --ignore external --input . -o /dev/stdout </dev/null 2>&1"))
          (shell-command-to-string cmd)))))
   :success-fn
   (lambda (output)
