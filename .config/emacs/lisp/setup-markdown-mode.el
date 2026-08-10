@@ -1,6 +1,7 @@
 ;; -*- lexical-binding: t; -*-
 
 (use-package markdown-mode
+  :ensure nil
   :defer t
   :preface
   (defun my/pandoc-preprocess-mermaid (begin end output-buffer)
@@ -23,10 +24,6 @@
         (call-process-region (point-min) (point-max) "pandoc" nil output-buffer nil "-f" "markdown" "-t" "html"))))
 
   :custom
-  (markdown-command 'my/pandoc-preprocess-mermaid)
-  (markdown-enable-math t)
-  (markdown-math-scale-factor 1.5)
-  :config
-  (setq markdown-unordered-list-item-prefix "- "))
+  (markdown-command 'my/pandoc-preprocess-mermaid))
 
 (provide 'setup-markdown-mode)

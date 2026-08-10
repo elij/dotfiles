@@ -3,7 +3,7 @@
 (use-package files
   :ensure nil
   :preface
-  (defun my/markdown-ggtel-mode-switch ()
+  (defun my/markdown-gptel-mode-switch ()
     "Switch mode if a gptel local variable exists."
     (when (local-variable-p 'gptel-model)
       (gptel-mode)))
@@ -16,6 +16,6 @@
   (kept-old-versions 5)
   (auto-save-file-name-transforms `((".*" ,(expand-file-name "backup" user-emacs-directory) t)))
   :hook
-  (hack-local-variables . my/markdown-ggtel-mode-switch))
+  (hack-local-variables . my/markdown-gptel-mode-switch))
 
 (provide 'setup-files)
