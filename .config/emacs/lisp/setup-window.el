@@ -16,7 +16,7 @@
 
     (when (> emacs-major-version 31)
       (set-face-attribute 'header-line nil
-                          :height 1
+                          :height 110
                           :background inactive-bg
                           :foreground (face-attribute 'default :foreground) 
                           :box `(:line-width 8 :color ,inactive-bg :style nil)
