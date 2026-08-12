@@ -1,3 +1,4 @@
+;; -*- lexical-binding: t; -*-
 (macher-agent-make-tool macher-agent-eval-elisp-full-tool
     "Evaluate a full Emacs Lisp buffer string."
   :category "execution"
