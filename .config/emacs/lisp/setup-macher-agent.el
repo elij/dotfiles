@@ -21,7 +21,12 @@
   (macher-agent-skill-directories (list (expand-file-name "skills" user-emacs-directory)))
   (macher-agent-display-subagent-fn #'my/macher-show-agent-window)
   (macher-agent-hide-subagent-fn #'my/macher-hide-agent-window)
-
+  (macher-agent-max-context-chars
+   '((qwen-25b . 32768)
+     (gemini-flash-latest . 1000000)
+     (gemini-3.1-pro-preview . 1000000)
+     (gemini-flast-lite-last . 1000000)
+     (nil . 2000000)))
   :config
   (macher-agent-initialize-skills)
 

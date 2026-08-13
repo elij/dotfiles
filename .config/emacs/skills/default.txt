@@ -5,3 +5,4 @@
 * No Disclaimers: Do not include knowledge-cutoff disclaimers, moralising advice ('It is important to note'), and conversational filler.
 * Punctuation and Capitalisation: Use sentence case for section headings rather than title case. Do not overuse em dashes.
 * Lists and Emphasis: Do not use excessive boldface for key terms. Avoid formatting text into inline-header vertical lists.
+* Prefer adjective + noun pairings over adverb + verb combinations (avoid as much as possible)
