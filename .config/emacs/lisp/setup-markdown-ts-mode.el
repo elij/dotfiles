@@ -45,6 +45,9 @@
       (?X (insert "- [x] "))
       (_ (funcall orig-fun char))))
 
+  :custom
+  (url-mail-command 'browse-url)
+
   :custom-face
   (markdown-ts-code ((t (:inherit fixed-pitch))))
   (markdown-ts-code-block ((t (:inherit fixed-pitch))))
