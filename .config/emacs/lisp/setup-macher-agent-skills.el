@@ -6,7 +6,7 @@
   :after macher-agent
   :preface
   (defun enable-default-agent-tools ()
-    (dolist (tool-name '("get_current_datetime" "eval_elisp"))
+    (dolist (tool-name '("get_current_datetime"))
       (when-let* ((tool (ignore-errors (gptel-get-tool tool-name))))
         (add-to-list 'gptel-tools tool))))
   :config
