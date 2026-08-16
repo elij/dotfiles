@@ -10,6 +10,7 @@
       (when-let* ((tool (ignore-errors (gptel-get-tool tool-name))))
         (add-to-list 'gptel-tools tool))))
   :config
-  (add-hook 'gptel-mode-hook #'enable-default-agent-tools 100))
+;;(add-hook 'macher-agent-before-restore-hook #'enable-default-agent-tools)
+(add-hook 'gptel-mode-hook #'enable-default-agent-tools 100))
 
 (provide 'setup-macher-agent-skills)

@@ -28,8 +28,9 @@
      (gemini-flast-lite-last . 1000000)
      (nil . 2000000)))
   :config
+  (macher-agent-install)
   (macher-agent-initialize-skills)
-
+  (add-hook 'gptel-mode-hook #'macher-agent-mode)
   (when-let*
       ((default-val (alist-get 'default gptel-directives))
        (default-prompt (if (listp default-val) 
