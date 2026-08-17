@@ -1,4 +1,5 @@
 ;; -*- lexical-binding: t; -*-
+(defalias 'markdown-mode #'markdown-ts-mode)
 
 (use-package markdown-ts-mode
   :ensure nil
