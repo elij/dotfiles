@@ -28,6 +28,9 @@
      (gemini-flast-lite-last . 1000000)
      (nil . 2000000)))
   :config
+  (require 'macher-agent-vfs)
+  (require 'macher-agent-sandbox)
+  (require 'macher-agent-zero-mem)
   (macher-agent-install)
   (macher-agent-initialize-skills)
   (add-hook 'gptel-mode-hook #'macher-agent-mode)

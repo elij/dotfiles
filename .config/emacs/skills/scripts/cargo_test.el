@@ -7,10 +7,14 @@
     (macher-agent-call-with-strict-vfs-pipeline
      context
      (lambda ()
-       (let ((cmd "find . -name \"Cargo.toml\" -exec dirname {} \\; | head -n 1 | xargs -I {} sh -c 'cd {} && cargo test 2>&1'"))
-         (shell-command-to-string cmd)))))
+       (let* ((toml-path (car (directory-files-recursively default-directory "^Cargo\\.toml$")))
+              (dir (if toml-path (file-name-directory toml-path) nil)))
+         (if dir
+             (let ((default-directory dir))
+               (shell-command-to-string "cargo test 2>&1"))
+           "ERROR: No Cargo.toml found. The workspace is empty or invalid.")))))
   :success-fn
   (lambda (output)
-    (if (string-match-p "\\(FAILED\\|error:\\)" output)
+    (if (string-match-p "\\(FAILED\\|error:\\|ERROR:\\)" output)
         output
       (concat "SUCCESS: All tests passed.\n\n=== OUTPUT ===\n" output))))
