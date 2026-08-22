@@ -10,8 +10,11 @@
        (let* ((toml-path (car (directory-files-recursively default-directory "^Cargo\\.toml$")))
               (dir (if toml-path (file-name-directory toml-path) nil)))
          (if dir
-             (let ((default-directory dir))
-               (shell-command-to-string "cargo test 2>&1"))
+             (let* ((default-directory dir)
+                    (clean-dir (directory-file-name (expand-file-name dir)))
+                    (cmd (format "RUSTFLAGS=\"--remap-path-prefix=%s=.\" cargo test 2>&1"
+                                 clean-dir)))
+               (shell-command-to-string cmd))
            "ERROR: No Cargo.toml found. The workspace is empty or invalid.")))))
   :success-fn
   (lambda (output)
