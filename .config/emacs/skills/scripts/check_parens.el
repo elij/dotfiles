@@ -22,7 +22,17 @@
                                    (start (save-excursion (beginning-of-defun) (point)))
                                    (end (save-excursion (end-of-defun) (point)))
                                    (snippet (buffer-substring-no-properties start end))
-                                   (broken (replace-regexp-in-string \"[()]\" (lambda (m) (concat \"\\n\" m \"\\n\")) snippet))
+                                   (counter 0)
+                                   (stack nil)
+                                   (broken (replace-regexp-in-string \"[()]\" 
+                                             (lambda (m) 
+                                               (if (string= m \"(\")
+                                                   (let ((id (setq counter (1+ counter))))
+                                                     (push id stack)
+                                                     (format \"\\n(%%d\\n\" id))
+                                                 (let ((id (if stack (pop stack) \"?\")))
+                                                   (format \"\\n)%%s\\n\" id))))
+                                             snippet))
                                    (cleaned (replace-regexp-in-string \"\\n+\" \"\\n\" broken)))
                               (princ (format \"Error at position %%d: %%s\\n\\n=== FAULTY FUNCTION BREAKDOWN ===\\n%%s\\n\" 
                                              pos 

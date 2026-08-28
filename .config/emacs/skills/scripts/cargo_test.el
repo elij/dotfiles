@@ -12,7 +12,7 @@
          (if dir
              (let* ((default-directory dir)
                     (clean-dir (directory-file-name (expand-file-name dir)))
-                    (cmd (format "RUSTFLAGS=\"--remap-path-prefix=%s=.\" cargo test 2>&1"
+                    (cmd (format "RUSTFLAGS=\"--remap-path-prefix=%s=.\" rtk cargo test 2>&1"
                                  clean-dir)))
                (shell-command-to-string cmd))
            "ERROR: No Cargo.toml found. The workspace is empty or invalid.")))))
