@@ -29,3 +29,4 @@
             (setq gc-cons-threshold (* 2 1024 1024))))
 
 (provide 'init)
+(put 'erase-buffer 'disabled nil)
