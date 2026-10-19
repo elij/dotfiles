@@ -7,7 +7,7 @@
 (setq macher-agent-cargo-test-tool
       (gptel-make-tool
        :name "cargo_test"
-       :description "Run 'cargo test' inside the VFS."
+       :description "Run 'cargo test' inside the VFS to test a rust package."
        :category "execution"
        :args nil
        :async t
@@ -23,8 +23,9 @@
               (macher-agent-call-with-strict-vfs-pipeline
                context
                (lambda ()
-                 (let* ((toml-path (car (directory-files-recursively default-directory "^Cargo\\.toml$")))
-                        (dir (if toml-path (file-name-directory toml-path) nil)))
+                 (let* ((all-tomls (directory-files-recursively default-directory "^Cargo\\.toml$"))
+                        (toml-path (car (sort all-tomls (lambda (a b) (< (length a) (length b))))))
+                        (dir (when toml-path (file-name-directory toml-path))))
                    (if dir
                        (let* ((default-directory dir)
                               (clean-dir (directory-file-name (expand-file-name dir)))

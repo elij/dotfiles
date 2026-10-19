@@ -82,6 +82,10 @@
         tree-sitter
         hunspellDicts.en_GB-ise
         hunspell
+        android-tools
+        tcptraceroute
+        zig
+        unrar
       ];
 
       pathsToLink = [ "/bin" "/share" "/Applications" ];

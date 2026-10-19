@@ -49,21 +49,8 @@
   :custom
   (url-mail-command 'browse-url)
 
-  :custom-face
-  (markdown-ts-code ((t (:inherit fixed-pitch))))
-  (markdown-ts-code-block ((t (:inherit fixed-pitch))))
-  (markdown-ts-heading-1 ((t (:height 1.5 :weight bold :inherit (outline-1 variable-pitch)))))
-  (markdown-ts-heading-2 ((t (:height 1.3 :weight bold :inherit (outline-2 variable-pitch)))))
-  (markdown-ts-heading-3 ((t (:height 1.18 :weight bold :inherit (outline-3 variable-pitch)))))
-  (markdown-ts-heading-4 ((t (:height 1.08 :weight bold :inherit (outline-4 variable-pitch)))))
-  (markdown-ts-heading-5 ((t (:height 1.0 :weight bold :inherit (outline-5 variable-pitch)))))
-  (markdown-ts-heading-6 ((t (:height 1.0 :weight bold :inherit (outline-6 variable-pitch)))))
-
   :config
   (advice-add 'markdown-ts-convert :around #'my/markdown-ts-convert-mermaid-override)
-  (advice-add 'markdown-ts-insert-structure :around #'my/markdown-ts-insert-structure-extended)
-
-  :hook
-  (markdown-ts-mode . variable-pitch-mode))
+  (advice-add 'markdown-ts-insert-structure :around #'my/markdown-ts-insert-structure-extended))
 
 (provide 'setup-markdown-ts-mode)
