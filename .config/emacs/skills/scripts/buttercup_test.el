@@ -1,8 +1,4 @@
 ;;; buttercup_test.el --- Buttercup test execution tool -*- lexical-binding: t; -*-
-
-(require 'macher-agent-tools)
-(require 'macher-agent-vfs)
-
 (setq macher-agent-buttercup-test-tool
       (gptel-make-tool
        :name "buttercup_test"
@@ -10,18 +6,18 @@
        :category "execution"
        :args nil
        :async t
-       :function (macher-agent-with-presentation-context ()
-                   (let ((native-fn (get 'macher-agent-buttercup-test-tool 'ptc-function)))
-                     (funcall native-fn context)))))
+       :function (lambda (callback)
+                   (let ((thunk (funcall (get 'macher-agent-buttercup-test-tool 'ptc-function))))
+                     (funcall thunk callback)))))
 
 (put 'macher-agent-buttercup-test-tool 'ptc-function
-     (lambda (context)
-       (let ((output
-              (macher-agent-call-with-strict-vfs-pipeline
-               context
-               (lambda ()
-                 (let ((cmd "find . -name \"*.elc\" -delete && emacs -batch -f package-initialize -L . -f buttercup-run-discover </dev/null 2>&1"))
-                   (shell-command-to-string cmd))))))
-         (if (string-match-p "\\([1-9][0-9]* failed\\|FAILED\\|Error:\\)" output)
-             output
-           (concat "SUCCESS: The tests ran perfectly with no errors.\n\n=== TEST OUTPUT ===\n" output)))))
+     (lambda (&optional context)
+       (let ((ctx (or context (current-buffer))))
+         (lambda (resolve)
+           (let ((cmd "find . -name \"*.elc\" -delete && emacs -batch -f package-initialize -L . -L tests -f buttercup-run-discover </dev/null 2>&1"))
+             (macher-agent-run-in-vfs-sandbox
+              ctx cmd resolve
+              (lambda (_code output)
+                (if (string-match-p "\\([1-9][0-9]* failed\\|FAILED\\|Error:\\)" output)
+                    output
+                  (concat "SUCCESS: The tests ran perfectly with no errors.\n\n=== TEST OUTPUT ===\n" output)))))))))

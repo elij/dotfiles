@@ -1,8 +1,4 @@
 ;;; elisp_make_lint.el --- Elisp project make lint tool -*- lexical-binding: t; -*-
-
-(require 'macher-agent-tools)
-(require 'macher-agent-vfs)
-
 (setq macher-agent-elisp-make-lint-tool
       (gptel-make-tool
        :name "elisp_make_lint"
@@ -10,20 +6,19 @@
        :category "execution"
        :args nil
        :async t
-       :function (macher-agent-with-presentation-context ()
-                   (let* ((native-fn (get 'macher-agent-elisp-make-lint-tool 'ptc-function))
-                          (root (or (and context (macher-agent-context-project-root context))
-                                    default-directory)))
-                     (funcall native-fn context root)))))
+       :function (lambda (callback)
+                   (let ((thunk (funcall (get 'macher-agent-elisp-make-lint-tool 'ptc-function))))
+                     (funcall thunk callback)))))
 
 (put 'macher-agent-elisp-make-lint-tool 'ptc-function
-     (lambda (context _root)
-       (let ((output
-              (macher-agent-call-with-strict-vfs-pipeline
-               context
-               (lambda ()
-                 (let ((cmd "make lint </dev/null 2>&1"))
-                   (shell-command-to-string cmd))))))
-         (if (string-match-p "\\([1-9][0-9]* failed\\|FAILED\\|Error:\\)" output)
-             output
-           (concat "SUCCESS: The lints ran with zero errors.\n\n=== LINT OUTPUT ===\n" output)))))
+     (lambda (&optional context _root)
+       (let ((ctx (or context (current-buffer))))
+         (lambda (resolve)
+           (let ((cmd "make lint </dev/null 2>&1"))
+             (macher-agent-run-in-vfs-sandbox
+              ctx cmd resolve
+              (lambda (code output)
+                (if (or (/= code 0)
+                        (string-match-p "\\([1-9][0-9]* failed\\|FAILED\\|Error:\\)" output))
+                    output
+                  (concat "SUCCESS: The lints ran with zero errors.\n\n=== LINT OUTPUT ===\n" output)))))))))

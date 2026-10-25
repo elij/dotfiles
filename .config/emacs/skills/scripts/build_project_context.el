@@ -1,8 +1,4 @@
 ;;; build_project_context.el --- Project structural map tool -*- lexical-binding: t; -*-
-
-(require 'macher-agent-tools)
-(require 'macher-agent-vfs)
-
 (setq macher-agent-build-project-context-tool
       (gptel-make-tool
        :name "build_project_context"
@@ -10,22 +6,22 @@
        :category "perception"
        :args nil
        :async t
-       :function (macher-agent-with-presentation-context ()
-                   (let* ((native-fn (get 'macher-agent-build-project-context-tool 'ptc-function))
-                          (root (or (and context (macher-agent-context-project-root context))
-                                    default-directory)))
-                     (funcall native-fn context root)))))
+       :function (lambda (callback)
+                   (let ((thunk (funcall (get 'macher-agent-build-project-context-tool 'ptc-function))))
+                     (funcall thunk callback)))))
 
 (put 'macher-agent-build-project-context-tool 'ptc-function
-     (lambda (context _root)
-       (let ((output
-              (macher-agent-call-with-strict-vfs-pipeline
-               context
-               (lambda ()
-                 (let ((cmd "context-builder -y -f rs --signatures --ignore external --input . -o /dev/stdout </dev/null 2>&1"))
-                   (shell-command-to-string cmd))))))
-         (unless (string-prefix-p "Execution failed" output)
-           (when (fboundp 'macher-agent-add-pending-instruction)
-             (macher-agent-add-pending-instruction
-              "The following text is a read-only architectural map of the codebase. Do NOT write mock implementations for these signatures.")))
-         output)))
+     (lambda (&optional context _root)
+       (let ((ctx (or context (current-buffer))))
+         (lambda (resolve)
+           (let ((cmd "context-builder -y -f rs --signatures --ignore external --input . -o /dev/stdout </dev/null 2>&1"))
+             (macher-agent-run-in-vfs-sandbox
+              ctx cmd resolve
+              (lambda (code output)
+                (if (or (/= code 0)
+                        (string-prefix-p "Execution failed" output))
+                    output
+                  (when (fboundp 'macher-agent-add-pending-instruction)
+                    (macher-agent-add-pending-instruction
+                     "The following text is a read-only architectural map of the codebase. Do NOT write mock implementations for these signatures."))
+                  output))))))))

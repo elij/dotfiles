@@ -9,13 +9,11 @@
        :category "execution"
        :args nil
        :async t
-       :function (macher-agent-with-presentation-context ()
-                   (let* ((native-fn (get 'macher-agent-get-current-datetime-tool 'ptc-function))
-                          (root (or (and context (macher-agent-context-project-root context))
-                                    default-directory))
-                          (raw-output (funcall native-fn nil context root)))
-                     (concat "Current Date/Time: " raw-output)))))
+       :function (lambda (callback)
+                   (let ((thunk (funcall (get 'macher-agent-get-current-datetime-tool 'ptc-function))))
+                     (funcall thunk callback)))))
 
 (put 'macher-agent-get-current-datetime-tool 'ptc-function
-     (lambda (_payload _context _root)
-       (current-time-string)))
+     (lambda (&optional _payload _context _root)
+       (lambda (resolve-fn)
+         (funcall resolve-fn (concat "Current Date/Time: " (current-time-string))))))

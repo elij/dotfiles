@@ -18,28 +18,37 @@
                       :type "string"
                       :description "The shell command to execute in Eshell"))
        :async t
-       :function (macher-agent-with-presentation-context (buffer_name command)
-                   (let* ((native-fn (get 'macher-agent-eshell-command-tool 'ptc-function))
-                          (root (or (and context (macher-agent-context-project-root context))
-                                    default-directory)))
-                     (funcall native-fn buffer_name command context root)))))
+       :function (lambda (callback buffer_name command)
+                   (let ((thunk (funcall (get 'macher-agent-eshell-command-tool 'ptc-function)
+                                         buffer_name command)))
+                     (funcall thunk callback)))))
 
 (put 'macher-agent-eshell-command-tool 'ptc-function
-     (lambda (buffer-name command context _root)
-       (let ((actual-name (macher-agent--resolve-buffer-name buffer-name)))
-         (macher-agent--ensure-access context actual-name)
-         (let ((target-buffer (get-buffer-create actual-name)))
-           (with-current-buffer target-buffer
-             (unless (derived-mode-p 'eshell-mode)
-               (eshell-mode))
-             (goto-char (point-max))
-             (insert command)
-             (eshell-send-input))
-           (when context
-             (let ((full-content (with-current-buffer target-buffer
-                                   (buffer-substring-no-properties (point-min) (point-max)))))
-               (macher-agent--update-context-file context actual-name full-content)
-               (macher-agent--auto-sync-context context)))
-           (format "SUCCESS: Executed command '%s' in Eshell buffer '%s' and synchronised memory."
-                   command
-                   actual-name)))))
+     (lambda (buffer-name command &optional context _root)
+       (let ((ctx (or (macher-agent-resolve-context context)
+                      (macher-agent-resolve-context (current-buffer)))))
+         (lambda (resolve-fn)
+           (condition-case err
+               (let ((actual-name (macher-agent--resolve-buffer-name buffer-name)))
+                 (when (macher-agent-valid-context-p ctx)
+                   (macher-agent--ensure-access ctx actual-name))
+                 (let ((target-buffer (get-buffer-create actual-name)))
+                   (with-current-buffer target-buffer
+                     (unless (derived-mode-p 'eshell-mode)
+                       (eshell-mode))
+                     (goto-char (point-max))
+                     (insert command)
+                     (eshell-send-input))
+                   (when (macher-agent-valid-context-p ctx)
+                     (let ((full-content (with-current-buffer target-buffer
+                                           (buffer-substring-no-properties (point-min) (point-max)))))
+                       (macher-agent--update-context-file ctx actual-name full-content)
+                       (macher-agent--auto-sync-context ctx)))
+                   (funcall resolve-fn
+                            (format "SUCCESS: Executed command '%s' in Eshell buffer '%s' and synchronised memory."
+                                    command
+                                    actual-name))))
+             (error
+              (funcall resolve-fn
+                       (format "ERROR: Failed to execute command in Eshell buffer: %s"
+                               (error-message-string err)))))))))

@@ -1,10 +1,4 @@
 ;;; cargo_check.el --- Cargo check execution tool -*- lexical-binding: t; -*-
-
-(require 'cl-lib)
-(require 'subr-x)
-(require 'macher-agent-tools)
-(require 'macher-agent-vfs)
-
 (setq macher-agent-cargo-check-tool
       (gptel-make-tool
        :name "cargo_check"
@@ -13,25 +7,26 @@
        :include nil
        :args nil
        :async t
-       :function (macher-agent-with-presentation-context ()
-                   (let ((native-fn (get 'macher-agent-cargo-check-tool 'ptc-function)))
-                     (funcall native-fn context)))))
+       :function (lambda (callback)
+                   (let ((thunk (funcall (get 'macher-agent-cargo-check-tool 'ptc-function))))
+                     (funcall thunk callback)))))
 
 (put 'macher-agent-cargo-check-tool 'ptc-function
-     (lambda (context)
-       (let ((raw-output
-              (macher-agent-call-with-strict-vfs-pipeline
-               context
-               (lambda ()
-                 (let* ((toml-path (car (directory-files-recursively default-directory "^Cargo\\.toml$")))
-                        (dir (if toml-path (file-name-directory toml-path) nil)))
-                   (if dir
-                       (let* ((default-directory dir)
-                              (clean-dir (directory-file-name (expand-file-name dir)))
-                              (cmd (format "RUSTFLAGS=\"--remap-path-prefix=%s=.\" rtk cargo check 2>&1"
-                                           clean-dir)))
-                         (shell-command-to-string cmd))
-                     "ERROR: No Cargo.toml found. The workspace is empty or invalid."))))))
-         (if (string-match-p "\\(error:\\|could not compile\\|ERROR:\\)" raw-output)
-             raw-output
-           (concat "SUCCESS: Cargo check completed with no errors.\n\n=== OUTPUT ===\n" raw-output)))))
+     (lambda (&optional context _root)
+       (let ((ctx (or context (current-buffer))))
+         (lambda (resolve)
+           (let ((cmd (concat
+                       "toml=$(find . -name 'Cargo.toml' -print "
+                       "| awk '{print length($0), $0}' | sort -n | head -n1 | cut -d' ' -f2-); "
+                       "if [ -z \"$toml\" ]; then "
+                       "  echo 'ERROR: No Cargo.toml found. The workspace is empty or invalid.'; exit 1; "
+                       "fi; "
+                       "cd \"$(dirname \"$toml\")\" && "
+                       "RUSTFLAGS=\"--remap-path-prefix=$(pwd)=.\" rtk cargo check </dev/null 2>&1")))
+             (macher-agent-run-in-vfs-sandbox
+              ctx cmd resolve
+              (lambda (code output)
+                (if (or (/= code 0)
+                        (string-match-p "\\(error:\\|error\\[\\|could not compile\\|ERROR:\\)" output))
+                    output
+                  (concat "SUCCESS: Cargo check completed with no errors.\n\n=== OUTPUT ===\n" output)))))))))

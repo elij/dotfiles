@@ -1,9 +1,4 @@
 ;;; cargo_test.el --- Run cargo test in workspace -*- lexical-binding: t; -*-
-
-(require 'subr-x)
-(require 'macher-agent-tools)
-(require 'macher-agent-vfs)
-
 (setq macher-agent-cargo-test-tool
       (gptel-make-tool
        :name "cargo_test"
@@ -11,28 +6,26 @@
        :category "execution"
        :args nil
        :async t
-       :function (macher-agent-with-presentation-context ()
-                   (let* ((native-fn (get 'macher-agent-cargo-test-tool 'ptc-function))
-                          (root (or (and context (macher-agent-context-project-root context))
-                                    default-directory)))
-                     (funcall native-fn context root)))))
+       :function (lambda (callback)
+                   (let ((thunk (funcall (get 'macher-agent-cargo-test-tool 'ptc-function))))
+                     (funcall thunk callback)))))
 
 (put 'macher-agent-cargo-test-tool 'ptc-function
-     (lambda (context _root)
-       (let ((output
-              (macher-agent-call-with-strict-vfs-pipeline
-               context
-               (lambda ()
-                 (let* ((all-tomls (directory-files-recursively default-directory "^Cargo\\.toml$"))
-                        (toml-path (car (sort all-tomls (lambda (a b) (< (length a) (length b))))))
-                        (dir (when toml-path (file-name-directory toml-path))))
-                   (if dir
-                       (let* ((default-directory dir)
-                              (clean-dir (directory-file-name (expand-file-name dir)))
-                              (cmd (format "RUSTFLAGS=\"--remap-path-prefix=%s=.\" rtk cargo test 2>&1"
-                                           clean-dir)))
-                         (shell-command-to-string cmd))
-                     "ERROR: No Cargo.toml found. The workspace is empty or invalid."))))))
-         (if (string-match-p "\\(FAILED\\|error:\\|ERROR:\\)" output)
-             output
-           (concat "SUCCESS: All tests passed.\n\n=== OUTPUT ===\n" output)))))
+     (lambda (&optional context)
+       (let ((ctx (or context (current-buffer))))
+         (lambda (resolve)
+           (let ((cmd (concat
+                       "toml=$(find . -name 'Cargo.toml' -print "
+                       "| awk '{print length($0), $0}' | sort -n | head -n1 | cut -d' ' -f2-); "
+                       "if [ -z \"$toml\" ]; then "
+                       "  echo 'ERROR: No Cargo.toml found. The workspace is empty or invalid.'; exit 1; "
+                       "fi; "
+                       "cd \"$(dirname \"$toml\")\" && "
+                       "RUSTFLAGS=\"--remap-path-prefix=$(pwd)=.\" rtk cargo test </dev/null 2>&1")))
+             (macher-agent-run-in-vfs-sandbox
+              ctx cmd resolve
+              (lambda (code output)
+                (if (or (/= code 0)
+                        (string-match-p "\\(FAILED\\|error:\\|error\\[\\|ERROR:\\)" output))
+                    output
+                  (concat "SUCCESS: All tests passed.\n\n=== OUTPUT ===\n" output)))))))))
