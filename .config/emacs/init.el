@@ -1,7 +1,14 @@
-;; -*- lexical-binding: t; -*-
-;; init.el
+;;; init.el --- Main initialisation -*- lexical-binding: t; -*-
 
 (setq gc-cons-threshold (* 128 1024 1024))
+
+(when (eq system-type 'android)
+  (tool-bar-mode 1)
+  (modifier-bar-mode 1)
+  (add-to-list 'default-frame-alist '(tool-bar-position . bottom))
+  (set-frame-parameter nil 'tool-bar-position 'bottom)
+  (setq tool-bar-button-margin '(12 . 8))
+  (setq auto-resize-tool-bars t))
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
@@ -28,5 +35,7 @@
           (lambda ()
             (setq gc-cons-threshold (* 2 1024 1024))))
 
-(provide 'init)
 (put 'erase-buffer 'disabled nil)
+
+(provide 'init)
+;;; init.el ends here

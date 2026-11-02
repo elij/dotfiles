@@ -86,6 +86,8 @@
         android-tools
         tcptraceroute
         zig
+        esptool
+        pass
       ];
 
       pathsToLink = [ "/bin" "/share" "/Applications" ];
