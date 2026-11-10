@@ -19,18 +19,39 @@
 (put 'macher-agent-eval-elisp-full-tool 'ptc-function
      (lambda (code &optional _context _root)
        (lambda (resolve-fn)
-         (let* ((code-string (or code ""))
-                (temp-buffer (generate-new-buffer " *elisp-eval*")))
+         (let ((code-string (or code ""))
+               (result nil)
+               (msg-buffer (messages-buffer)))
            (condition-case err
-               (unwind-protect
-                   (with-current-buffer temp-buffer
-                     (insert code-string)
-                     (eval-buffer)
-                     (funcall resolve-fn "SUCCESS: Buffer evaluated without errors."))
-                 (when (buffer-live-p temp-buffer)
-                   (kill-buffer temp-buffer)))
+               (let ((msg-start (with-current-buffer msg-buffer (point-max)))
+                     (message-log-max t)
+                     (inhibit-message t))
+                 (let ((std-out
+                        (with-output-to-string
+                          (with-temp-buffer
+                            (insert code-string)
+                            (goto-char (point-min))
+                            (condition-case nil
+                                (while t
+                                  (setq result (funcall (intern "eval") (read (current-buffer)) t)))
+                              (end-of-file nil))))))
+                   (let* ((msg-text (with-current-buffer msg-buffer
+                                      (when (> (point-max) msg-start)
+                                        (string-trim-right
+                                         (buffer-substring-no-properties msg-start (point-max))
+                                         "\n"))))
+                          (out-text (string-join
+                                     (delq nil (list (and msg-text (not (string-empty-p msg-text)) msg-text)
+                                                     (and (not (string-empty-p std-out))
+                                                          (string-trim-right std-out "\n"))))
+                                     "\n"))
+                          (res-text (unless (equal (format "%s" result) msg-text)
+                                      (prin1-to-string result))))
+                     (funcall resolve-fn
+                              (cond
+                               ((and (not (string-empty-p out-text)) res-text (not (null result)))
+                                (format "%s\n%s" out-text res-text))
+                               ((not (string-empty-p out-text)) out-text)
+                               (t (or res-text "nil")))))))
              (error
-              (when (buffer-live-p temp-buffer)
-                (kill-buffer temp-buffer))
-              (funcall resolve-fn (format "ERROR: Failed to evaluate buffer: %s"
-                                          (error-message-string err)))))))))
+              (funcall resolve-fn (format "ERROR: %s" (error-message-string err)))))))))

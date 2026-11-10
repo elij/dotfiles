@@ -50,6 +50,9 @@
    (markdown-mode . gptel-performance-mode))
   
   :config
+  (when (eq system-type 'android)
+    (setq gptel-use-curl nil))
+  
   (add-to-list 'gptel-prompt-prefix-alist '(markdown-ts-mode . "### "))
   (defvar my-gemini-backend
     (gptel-make-gemini "Gemini"
