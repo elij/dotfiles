@@ -5,10 +5,14 @@
 (when (eq system-type 'android)
   (tool-bar-mode 1)
   (modifier-bar-mode 1)
+  (define-key secondary-tool-bar-map [spacer]
+              `(menu-item "" ignore :image
+                          ,(create-image (format "/* XPM */\nstatic char *s[]={\"60 1 1 1\",\" c None\",\"%60s\"};" "")
+                                         'xpm t)))
   (add-to-list 'default-frame-alist '(tool-bar-position . bottom))
   (set-frame-parameter nil 'tool-bar-position 'bottom)
-  (setq tool-bar-button-margin '(12 . 8))
-  (setq auto-resize-tool-bars t))
+  (setq tool-bar-button-margin 32
+        auto-resize-tool-bars t))
 
 (require 'package)
 (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
