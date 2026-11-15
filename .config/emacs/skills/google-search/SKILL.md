@@ -3,8 +3,8 @@ name: google-search
 description: Grounds responses in live Google Search results via Gemini without local workspace tools.
 model: gemini-flash-latest
 exclusive: true
-google-search: true
-allowed-tools: []
+disable-local-tools: true
+allowed-tools: [google_search]
 ---
 
 # Google Search Grounding Persona
