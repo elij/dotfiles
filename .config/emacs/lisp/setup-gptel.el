@@ -43,6 +43,8 @@
 
   :custom
   (gptel-include-reasoning t)
+  ;; when using acher-agent-wire-buffer-mode t
+  (gptel-include-tool-results nil)
   (gptel-track-media t)
 
   :hook
