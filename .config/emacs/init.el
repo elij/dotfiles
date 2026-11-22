@@ -3,6 +3,11 @@
 (setq gc-cons-threshold (* 128 1024 1024))
 
 (when (eq system-type 'android)
+  (setq-default with-editor-emacsclient-executable
+                (expand-file-name
+                 (or (bound-and-true-p emacsclient-program-name)
+                     "libemacsclient.so")
+                 exec-directory))
   (tool-bar-mode 1)
   (modifier-bar-mode 1)
   (define-key secondary-tool-bar-map [spacer]

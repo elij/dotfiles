@@ -2,10 +2,18 @@
 
 (if (eq system-type 'android)
     (let ((termux-bin "/data/data/com.termux/files/usr/bin")
-          (termux-lib "/data/data/com.termux/files/usr/lib"))
-      (setenv "PATH" (format "%s:%s" termux-bin (getenv "PATH")))
-      (setenv "LD_LIBRARY_PATH" (format "%s:%s" termux-lib (getenv "LD_LIBRARY_PATH")))
-      (push termux-bin exec-path))
+          (termux-lib "/data/data/com.termux/files/usr/lib")
+          (current-path (getenv "PATH"))
+          (current-ld (getenv "LD_LIBRARY_PATH")))
+      (setenv "PATH"
+              (if (and current-path (not (string-empty-p current-path)))
+                  (concat termux-bin ":" current-path)
+                termux-bin))
+      (setenv "LD_LIBRARY_PATH"
+              (if (and current-ld (not (string-empty-p current-ld)))
+                  (concat termux-lib ":" current-ld)
+                termux-lib))
+      (add-to-list 'exec-path termux-bin))
 
   (push '(menu-bar-lines . 0) default-frame-alist)
   (push '(tool-bar-lines . 0) default-frame-alist)
