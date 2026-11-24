@@ -35,10 +35,10 @@
                          (message "Fetching MELPA package archives in the background...")
                          (package-refresh-contents t))))
 
+(add-to-list 'load-path (expand-file-name "lisp" user-emacs-directory))
+
 (dolist (file (directory-files (expand-file-name "lisp" user-emacs-directory) t "^setup-.*\\.el$"))
-  (let ((module-name (intern (file-name-base file))))
-    (load-file file)
-    (require module-name)))
+  (require (intern (file-name-base file))))
 
 (add-hook 'emacs-startup-hook
           (lambda ()

@@ -1,4 +1,5 @@
-;;; elisp_lsp.el --- Emacs Lisp inspection tool -*- lexical-binding: t; -*-
+;;; elisp_lsp_emulator.el --- Emacs Lisp inspection tool -*- lexical-binding: t; -*-
+
 (setq macher-agent-elisp-lsp-tool
       (gptel-make-tool
        :name "elisp_lsp"
@@ -19,11 +20,20 @@ Query types:
 
 (put 'macher-agent-elisp-lsp-tool 'ptc-function
      (lambda (query-type target-file &optional symbol context _root)
-       (let ((ctx (or context (current-buffer))))
+       (let* ((ctx-in-symbol (and (null context)
+                                  (not (null symbol))
+                                  (not (stringp symbol))))
+              (actual-symbol (if ctx-in-symbol nil symbol))
+              (ctx (or (if ctx-in-symbol symbol context)
+                       (current-buffer)))
+              (run-fn (if (fboundp 'macher-agent-vfs-run-in-sandbox)
+                          #'macher-agent-vfs-run-in-sandbox
+                        #'macher-agent-run-in-vfs-sandbox)))
          (lambda (resolve)
            (let* ((elisp-script
                    (format "(condition-case err
                                (progn
+                                 (require 'bytecomp)
                                  (setq byte-compile-error-on-warn nil)
                                  (add-to-list 'load-path default-directory)
                                  (pcase %S
@@ -45,17 +55,20 @@ Query types:
                                                            (line-number-at-pos (cdr loc)))))
                                         (princ \"ERROR: Definition not found.\\n\"))))
                                    (\"diagnostics\"
-                                    (let* ((standard-output (current-buffer))
-                                           (standard-error (current-buffer)))
-                                      (ignore-errors (byte-compile-file %S))
-                                      (princ (buffer-string))))
+                                    (let ((byte-compile-dest-file-function (lambda (_) (make-temp-file \"lsp-bc-\" nil \".elc\"))))
+                                      (byte-compile-file %S)
+                                      (let ((log-buf (get-buffer \"*Compile-Log*\")))
+                                        (if (and log-buf (> (buffer-size log-buf) 0))
+                                            (princ (with-current-buffer log-buf (buffer-string)))
+                                          (princ \"No byte-compilation diagnostics.\\n\")))))
                                    (_ (princ \"ERROR: Unknown query type.\\n\"))))
                              (error
                               (princ (format \"ERROR during LSP execution: %%s\\n\" (error-message-string err)))))"
-                           query-type target-file (or symbol "") target-file (or symbol "") target-file))
+                           query-type target-file (or actual-symbol "")
+                           target-file (or actual-symbol "") target-file))
                   (cmd (format "emacs --batch -Q --eval %s </dev/null 2>&1"
                                (shell-quote-argument elisp-script))))
-             (macher-agent-run-in-vfs-sandbox
-              ctx cmd resolve
+             (funcall
+              run-fn ctx cmd resolve
               (lambda (_code output)
                 (format "=== LSP QUERY RESULT ===\n%s" (string-trim output)))))))))

@@ -1,4 +1,5 @@
 ;;; eval_deno.el --- Evaluate TypeScript and JavaScript via Deno inside VFS -*- lexical-binding: t; -*-
+
 (setq macher-agent-eval-deno-tool
       (gptel-make-tool
        :name "eval_deno"
@@ -14,10 +15,15 @@
 
 (put 'macher-agent-eval-deno-tool 'ptc-function
      (lambda (script &optional context _root)
-       (let ((ctx (or context (current-buffer))))
+       (let ((ctx (or context (current-buffer)))
+             (run-fn (if (fboundp 'macher-agent-vfs-run-in-sandbox)
+                         #'macher-agent-vfs-run-in-sandbox
+                       #'macher-agent-run-in-vfs-sandbox)))
          (lambda (resolve)
            (let ((cmd (format "deno eval %s </dev/null 2>&1" (shell-quote-argument script))))
-             (macher-agent-run-in-vfs-sandbox
-              ctx cmd resolve
-              (lambda (_code output)
-                (concat "DENO OUTPUT:\n" output))))))))
+             (funcall
+              run-fn ctx cmd resolve
+              (lambda (code output)
+                (if (/= code 0)
+                    (format "ERROR: Deno exited with code %d.\n\n=== DENO OUTPUT ===\n%s" code output)
+                  (concat "DENO OUTPUT:\n" output)))))))))

@@ -1,4 +1,5 @@
 ;;; build_project_context.el --- Project structural map tool -*- lexical-binding: t; -*-
+
 (setq macher-agent-build-project-context-tool
       (gptel-make-tool
        :name "build_project_context"
@@ -12,11 +13,14 @@
 
 (put 'macher-agent-build-project-context-tool 'ptc-function
      (lambda (&optional context _root)
-       (let ((ctx (or context (current-buffer))))
+       (let ((ctx (or context (current-buffer)))
+             (run-fn (if (fboundp 'macher-agent-vfs-run-in-sandbox)
+                         #'macher-agent-vfs-run-in-sandbox
+                       #'macher-agent-run-in-vfs-sandbox)))
          (lambda (resolve)
            (let ((cmd "context-builder -y -f rs --signatures --ignore external --input . -o /dev/stdout </dev/null 2>&1"))
-             (macher-agent-run-in-vfs-sandbox
-              ctx cmd resolve
+             (funcall
+              run-fn ctx cmd resolve
               (lambda (code output)
                 (if (or (/= code 0)
                         (string-prefix-p "Execution failed" output))

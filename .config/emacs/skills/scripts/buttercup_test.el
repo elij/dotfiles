@@ -18,8 +18,8 @@
 (put 'macher-agent-buttercup-test-tool 'ptc-function
      (lambda (&optional search-path context)
        ;; When called with 0 arguments from PTC as `(buttercup-test)',
-       ;; `macher-agent--dispatch-ptc-primitive' appends `context' to an empty
-       ;; argument list, placing `context' in the `search-path' slot.
+       ;; the sandbox dispatcher appends `context' to an empty argument list,
+       ;; placing `context' in the `search-path' slot.
        (let* ((ctx-in-first-arg (and (null context)
                                      (not (null search-path))
                                      (not (stringp search-path))))
@@ -30,13 +30,17 @@
                                    (not (string-empty-p (string-trim raw-path))))
                               (string-trim raw-path)
                             "tests"))
-              (quoted-dir (shell-quote-argument target-dir)))
+              (quoted-dir (shell-quote-argument target-dir))
+              (run-fn (if (fboundp 'macher-agent-vfs-run-in-sandbox)
+                          #'macher-agent-vfs-run-in-sandbox
+                        #'macher-agent-run-in-vfs-sandbox)))
          (lambda (resolve)
            (let ((cmd (format "find . -name \"*.elc\" -delete && emacs -batch -f package-initialize -L . -L %s -f buttercup-run-discover %s </dev/null 2>&1"
                               quoted-dir quoted-dir)))
-             (macher-agent-run-in-vfs-sandbox
-              ctx cmd resolve
-              (lambda (_code output)
-                (if (string-match-p "\\([1-9][0-9]* failed\\|FAILED\\|Error:\\)" output)
+             (funcall
+              run-fn ctx cmd resolve
+              (lambda (code output)
+                (if (or (/= code 0)
+                        (string-match-p "\\([1-9][0-9]* failed\\|FAILED\\|Error:\\)" output))
                     output
                   (concat "SUCCESS: The tests ran perfectly with no errors.\n\n=== TEST OUTPUT ===\n" output)))))))))

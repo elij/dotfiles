@@ -33,15 +33,29 @@
 
 (put 'macher-agent-playwright-deno-tool 'ptc-function
      (lambda (script &optional screenshot-path context)
-       (let ((ctx (or (macher-agent-resolve-context context)
-                      (macher-agent-resolve-context (current-buffer)))))
+       (let* ((ctx-in-shot (and (null context)
+                                (not (null screenshot-path))
+                                (not (stringp screenshot-path))))
+              (actual-shot (if ctx-in-shot nil screenshot-path))
+              (ctx (or (macher-agent-resolve-context (if ctx-in-shot screenshot-path context))
+                       (macher-agent-resolve-context (current-buffer))))
+              (pipeline-fn (if (fboundp 'macher-agent-vfs-call-with-strict-pipeline)
+                               #'macher-agent-vfs-call-with-strict-pipeline
+                             #'macher-agent-call-with-strict-vfs-pipeline))
+              (slash-fn (if (fboundp 'macher-agent-ensure-trailing-slash)
+                            #'macher-agent-ensure-trailing-slash
+                          #'macher-agent--ensure-trailing-slash))
+              (trunc-fn (if (fboundp 'macher-agent-truncate-string)
+                            #'macher-agent-truncate-string
+                          #'macher-agent--truncate-string)))
          (lambda (resolve)
            (if (not (and (boundp 'gptel-track-media) gptel-track-media))
                (funcall resolve "ERROR: gptel media send option is off (gptel-track-media is nil).")
-             (macher-agent-call-with-strict-vfs-pipeline
-              ctx resolve
+             (funcall
+              pipeline-fn ctx resolve
               (lambda (sandbox-dir done)
-                (let* ((default-directory (macher-agent--ensure-trailing-slash sandbox-dir))
+                (let* ((canon-sandbox (file-name-as-directory (file-truename sandbox-dir)))
+                       (default-directory (funcall slash-fn sandbox-dir))
                        (shot-dir (expand-file-name ".playwright-screenshots" sandbox-dir))
                        (fake-home (expand-file-name ".playwright-home" sandbox-dir))
                        (real-home (expand-file-name "~"))
@@ -81,14 +95,17 @@
                                                (with-current-buffer out-buf
                                                  (buffer-string))
                                              ""))
-                                  (explicit-shot (and screenshot-path
-                                                      (not (string-empty-p screenshot-path))
-                                                      (expand-file-name screenshot-path sandbox-dir)))
+                                  (explicit-cand (and (stringp actual-shot)
+                                                      (not (string-empty-p actual-shot))
+                                                      (expand-file-name actual-shot sandbox-dir)))
+                                  (explicit-shot (when (and explicit-cand (file-exists-p explicit-cand))
+                                                   (let ((tr (file-truename explicit-cand)))
+                                                     (when (string-prefix-p canon-sandbox tr)
+                                                       tr))))
                                   (dir-shots (when (file-directory-p shot-dir)
                                                (directory-files-recursively
                                                 shot-dir "\\.\\(png\\|jpe?g\\|webp\\)\\'")))
-                                  (shots (append (when (and explicit-shot (file-exists-p explicit-shot))
-                                                   (list explicit-shot))
+                                  (shots (append (when explicit-shot (list explicit-shot))
                                                  dir-shots))
                                   (primary-shot (car (last shots))))
                              (when (buffer-live-p out-buf)
@@ -101,14 +118,15 @@
                                        (plist-put (copy-sequence (macher-agent-context-plugins ctx))
                                                   :pending-media media-spec))))
                              (funcall done
-                                      (macher-agent--truncate-string
+                                      (funcall
+                                       trunc-fn
                                        (concat
                                         (if (= code 0)
                                             "SUCCESS: Playwright Deno script completed.\n"
                                           (format "ERROR: Playwright Deno script exited with code %d.\n" code))
                                         (if primary-shot
                                             (format "Screenshot '%s' queued into visual context.\n"
-                                                    (file-relative-name primary-shot sandbox-dir))
+                                                    (file-relative-name primary-shot canon-sandbox))
                                           "No screenshots were found in PLAYWRIGHT_SCREENSHOT_DIR or screenshot_path.\n")
                                         "\n=== DENO OUTPUT ===\n"
                                         raw-out)))))))

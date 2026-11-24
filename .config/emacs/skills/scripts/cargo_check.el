@@ -1,4 +1,5 @@
 ;;; cargo_check.el --- Cargo check execution tool -*- lexical-binding: t; -*-
+
 (setq macher-agent-cargo-check-tool
       (gptel-make-tool
        :name "cargo_check"
@@ -13,7 +14,10 @@
 
 (put 'macher-agent-cargo-check-tool 'ptc-function
      (lambda (&optional context _root)
-       (let ((ctx (or context (current-buffer))))
+       (let ((ctx (or context (current-buffer)))
+             (run-fn (if (fboundp 'macher-agent-vfs-run-in-sandbox)
+                         #'macher-agent-vfs-run-in-sandbox
+                       #'macher-agent-run-in-vfs-sandbox)))
          (lambda (resolve)
            (let ((cmd (concat
                        "toml=$(find . -name 'Cargo.toml' -print "
@@ -23,8 +27,8 @@
                        "fi; "
                        "cd \"$(dirname \"$toml\")\" && "
                        "RUSTFLAGS=\"--remap-path-prefix=$(pwd)=.\" rtk cargo check </dev/null 2>&1")))
-             (macher-agent-run-in-vfs-sandbox
-              ctx cmd resolve
+             (funcall
+              run-fn ctx cmd resolve
               (lambda (code output)
                 (if (or (/= code 0)
                         (string-match-p "\\(error:\\|error\\[\\|could not compile\\|ERROR:\\)" output))

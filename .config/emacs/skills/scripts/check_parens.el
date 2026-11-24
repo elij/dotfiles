@@ -1,4 +1,5 @@
 ;;; check_parens.el --- Parenthesis checking tool -*- lexical-binding: t; -*-
+
 (setq macher-agent-check-parens-tool
       (gptel-make-tool
        :name "check_parens"
@@ -14,19 +15,24 @@
 
 (put 'macher-agent-check-parens-tool 'ptc-function
      (lambda (file &optional context _root)
-       (let ((ctx (or context (current-buffer))))
+       (let ((ctx (or context (current-buffer)))
+             (run-fn (if (fboundp 'macher-agent-vfs-run-in-sandbox)
+                         #'macher-agent-vfs-run-in-sandbox
+                       #'macher-agent-run-in-vfs-sandbox)))
          (lambda (resolve)
            (let* ((elisp-script
                    (format
                     "(condition-case err
-                         (progn
-                           (find-file %S)
+                         (with-temp-buffer
+                           (insert-file-contents %S)
+                           (emacs-lisp-mode)
                            (check-parens)
                            (princ \"SUCCESS\\n\"))
                        (error
                         (let* ((pos (point))
-                               (start (save-excursion (beginning-of-defun) (point)))
-                               (end (save-excursion (end-of-defun) (point)))
+                               (line (line-number-at-pos pos))
+                               (start (save-excursion (ignore-errors (beginning-of-defun)) (point)))
+                               (end (save-excursion (ignore-errors (end-of-defun)) (point)))
                                (snippet (buffer-substring-no-properties start end))
                                (counter 0)
                                (stack nil)
@@ -40,19 +46,16 @@
                                                (format \"\\n)%%s\\n\" id))))
                                          snippet))
                                (cleaned (replace-regexp-in-string \"\\n+\" \"\\n\" broken)))
-                          (princ (format \"Error at position %%d: %%s\\n\\n=== FAULTY FUNCTION BREAKDOWN ===\\n%%s\\n\"
-                                         pos
-                                         (error-message-string err)
-                                         cleaned)))))"
+                          (princ (format \"CHECK_PARENS_ERROR at line %%d (pos %%d): %%s\\n\\n=== FAULTY FUNCTION BREAKDOWN ===\\n%%s\\n\"
+                                         line pos (error-message-string err) cleaned))
+                          (kill-emacs 1))))"
                     file))
-                  (cmd (format "emacs --batch --eval %s </dev/null 2>&1"
+                  (cmd (format "emacs -Q --batch --eval %s </dev/null 2>&1"
                                (shell-quote-argument elisp-script))))
-             (macher-agent-run-in-vfs-sandbox
-              ctx cmd resolve
+             (funcall
+              run-fn ctx cmd resolve
               (lambda (code output)
                 (if (or (/= code 0)
-                        (string-match-p "scan-error" output)
-                        (string-match-p "unbalanced" (downcase output))
-                        (string-match-p "error" (downcase output)))
+                        (string-match-p "CHECK_PARENS_ERROR" output))
                     (concat "ERROR: Parenthesis mismatch detected.\n\n=== EMACS OUTPUT ===\n" output)
                   (concat "SUCCESS: The file's parentheses are perfectly balanced.\n\n=== EMACS OUTPUT ===\n" output)))))))))

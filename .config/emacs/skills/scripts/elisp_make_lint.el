@@ -1,4 +1,5 @@
 ;;; elisp_make_lint.el --- Elisp project make lint tool -*- lexical-binding: t; -*-
+
 (setq macher-agent-elisp-make-lint-tool
       (gptel-make-tool
        :name "elisp_make_lint"
@@ -12,11 +13,14 @@
 
 (put 'macher-agent-elisp-make-lint-tool 'ptc-function
      (lambda (&optional context _root)
-       (let ((ctx (or context (current-buffer))))
+       (let ((ctx (or context (current-buffer)))
+             (run-fn (if (fboundp 'macher-agent-vfs-run-in-sandbox)
+                         #'macher-agent-vfs-run-in-sandbox
+                       #'macher-agent-run-in-vfs-sandbox)))
          (lambda (resolve)
            (let ((cmd "make lint </dev/null 2>&1"))
-             (macher-agent-run-in-vfs-sandbox
-              ctx cmd resolve
+             (funcall
+              run-fn ctx cmd resolve
               (lambda (code output)
                 (if (or (/= code 0)
                         (string-match-p "\\([1-9][0-9]* failed\\|FAILED\\|Error:\\)" output))
