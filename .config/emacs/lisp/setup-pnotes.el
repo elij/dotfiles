@@ -3,6 +3,17 @@
 (use-package pnotes
   :ensure nil
   :vc (:url "https://github.com/elij/pnotes")
-  :defer t)
+  :defer t
+  :preface
+  (defun my-pnotes-layout ()
+    "Open the default PNotes workspace layout."
+    (interactive)
+    (delete-other-windows)
+    (pnotes-daily)
+    (pnotes-speedbar-open "PNotes")
+    (pnotes-graph)
+    (select-window (pnotes--main-window)))
+  :config
+  (keymap-set pnotes-command-map "l" #'my-pnotes-layout))
 
 (provide 'setup-pnotes)

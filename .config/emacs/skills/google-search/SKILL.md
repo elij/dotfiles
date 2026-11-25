@@ -1,6 +1,7 @@
 ---
 name: google-search
 description: Grounds responses in live Google Search results via Gemini without local workspace tools.
+backend: Gemini
 model: gemini-flash-latest
 exclusive: true
 disable-local-tools: true
