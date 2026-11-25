@@ -14,6 +14,10 @@
     (pnotes-graph)
     (select-window (pnotes--main-window)))
   :config
+  (defcustom pnotes-graph-max-distance 1
+    "Integer hop limit for local graphs, or nil for the full repository graph."
+    :type '(choice (const :tag "Full graph" nil) integer)
+    :group 'pnotes)
   (keymap-set pnotes-command-map "l" #'my-pnotes-layout))
 
 (provide 'setup-pnotes)
