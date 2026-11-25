@@ -7,9 +7,13 @@
     mac-app-util.url = "github:hraban/mac-app-util";
     emacs-overlay.url = "github:nix-community/emacs-overlay";
     lean4-nix.url = "github:lenianiva/lean4-nix";
+    nari-llama = {
+      url = "github:nari-labs/nari-llama.cpp";
+      flake = false;
+    };
   };
 
-  outputs = { self, nixpkgs, nixpkgs-old, mac-app-util, emacs-overlay, lean4-nix }:
+  outputs = { self, nixpkgs, nixpkgs-old, mac-app-util, emacs-overlay, lean4-nix, nari-llama }:
   let
     system = "aarch64-darwin";
       
@@ -53,6 +57,34 @@
       '';
     });
 
+nariLlama = (pkgs.llama-cpp.override {
+      metalSupport = true;
+      blasSupport = true;
+    }).overrideAttrs (oldAttrs: {
+      pname = "nari-llama-cpp";
+      version = "12431";
+      src = nari-llama;
+
+      patches = [ ];
+      postPatch = "";
+      npmDeps = null;
+
+      nativeBuildInputs = builtins.filter
+        (x: (x.pname or x.name or "") != "npm-config-hook")
+        (oldAttrs.nativeBuildInputs or [ ]);
+
+      preConfigure = ''
+        prependToVar cmakeFlags "-DLLAMA_BUILD_COMMIT:STRING=${nari-llama.rev}"
+      '';
+
+      cmakeFlags = (oldAttrs.cmakeFlags or [ ]) ++ [
+        "-DGGML_METAL=ON"
+        "-DGGML_METAL_EMBED_LIBRARY=ON"
+        "-DLLAMA_BUILD_UI=OFF"
+        "-DLLAMA_USE_PREBUILT_UI=OFF"
+      ];
+    });
+
   in
   {
     packages.${system}.default = pkgs.buildEnv {
@@ -68,7 +100,7 @@
         jdk25_headless
         ghostscript
         jq
-        llama-cpp
+        nariLlama
         protobuf
         tcl
         asciinema
