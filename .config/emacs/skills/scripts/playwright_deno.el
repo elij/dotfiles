@@ -3,6 +3,7 @@
 (require 'cl-lib)
 (require 'mailcap)
 (require 'subr-x)
+(require 'ansi-color)
 (require 'gptel)
 (require 'macher-agent-core)
 (require 'macher-agent-tools)
@@ -16,11 +17,13 @@
                      "and return the captured screenshot directly in visual context. "
                      "Use `import { firefox } from \"npm:playwright@1.60.0\";` and call `Deno.exit(0)` after closing the browser. "
                      "Save screenshots to Deno.env.get('PLAYWRIGHT_SCREENSHOT_DIR') "
-                     "or to the path specified in `screenshot_path`.")
+                     "or to the path specified in `screenshot_path`. "
+                     "When testing a local server (such as `deno serve`), pick a free ephemeral port, "
+                     "terminate the child server in a `finally` block, and use `page.route` when mocking backend APIs.")
        :category "perception"
        :args '((:name "script"
                       :type "string"
-                      :description "TypeScript/JavaScript Playwright script to execute via `deno run -A`.")
+                      :description "TypeScript/JavaScript Playwright script to execute via `deno run -q -A`.")
                (:name "screenshot_path"
                       :type "string"
                       :optional t
@@ -39,6 +42,9 @@
               (actual-shot (if ctx-in-shot nil screenshot-path))
               (ctx (or (macher-agent-resolve-context (if ctx-in-shot screenshot-path context))
                        (macher-agent-resolve-context (current-buffer))))
+              (ws-root (and ctx
+                            (fboundp 'macher-agent--context-workspace-root)
+                            (macher-agent--context-workspace-root ctx)))
               (pipeline-fn (if (fboundp 'macher-agent-vfs-call-with-strict-pipeline)
                                #'macher-agent-vfs-call-with-strict-pipeline
                              #'macher-agent-call-with-strict-vfs-pipeline))
@@ -59,11 +65,15 @@
                        (shot-dir (expand-file-name ".playwright-screenshots" sandbox-dir))
                        (fake-home (expand-file-name ".playwright-home" sandbox-dir))
                        (real-home (expand-file-name "~"))
+                       (ws-node-modules (and (stringp ws-root)
+                                             (expand-file-name "node_modules" ws-root)))
+                       (sandbox-node-modules (expand-file-name "node_modules" sandbox-dir))
                        (script-file (expand-file-name ".macher-playwright-runner.ts" sandbox-dir))
                        (out-buf (generate-new-buffer " *macher-playwright-deno*"))
                        (process-environment
                         (append
-                         (list (format "PLAYWRIGHT_SCREENSHOT_DIR=%s" shot-dir)
+                         (list "NO_COLOR=1"
+                               (format "PLAYWRIGHT_SCREENSHOT_DIR=%s" shot-dir)
                                (format "PLAYWRIGHT_BROWSERS_PATH=%s"
                                        (expand-file-name "Library/Caches/ms-playwright" real-home))
                                (format "DENO_DIR=%s"
@@ -76,6 +86,14 @@
                                "MOZ_DISABLE_RDD_SANDBOX=1"
                                "MOZ_DISABLE_SOCKET_PROCESS_SANDBOX=1")
                          process-environment)))
+                  ;; Seed node_modules via APFS copy-on-write clone when available
+                  ;; so Deno avoids re-initialising workspace npm packages per run.
+                  (when (and ws-node-modules
+                             (file-directory-p ws-node-modules)
+                             (not (file-exists-p sandbox-node-modules))
+                             (eq system-type 'darwin))
+                    (ignore-errors
+                      (call-process "cp" nil nil nil "-cR" ws-node-modules sandbox-node-modules)))
                   (make-directory shot-dir t)
                   (make-directory (expand-file-name "Library/Application Support/Firefox" fake-home) t)
                   (let ((coding-system-for-write 'utf-8-unix))
@@ -86,14 +104,17 @@
                        :name "macher-playwright-deno"
                        :buffer out-buf
                        :noquery t
-                       :command (list "deno" "run" "-A" script-file)
+                       :connection-type 'pipe
+                       :command (list "deno" "run" "-q" "-A" script-file)
                        :sentinel
                        (lambda (proc _event)
                          (when (memq (process-status proc) '(exit signal))
                            (let* ((code (process-exit-status proc))
                                   (raw-out (if (buffer-live-p out-buf)
                                                (with-current-buffer out-buf
-                                                 (buffer-string))
+                                                 (replace-regexp-in-string
+                                                  "\r" ""
+                                                  (ansi-color-filter-apply (buffer-string))))
                                              ""))
                                   (explicit-cand (and (stringp actual-shot)
                                                       (not (string-empty-p actual-shot))
@@ -103,11 +124,14 @@
                                                      (when (string-prefix-p canon-sandbox tr)
                                                        tr))))
                                   (dir-shots (when (file-directory-p shot-dir)
-                                               (directory-files-recursively
-                                                shot-dir "\\.\\(png\\|jpe?g\\|webp\\)\\'")))
-                                  (shots (append (when explicit-shot (list explicit-shot))
-                                                 dir-shots))
-                                  (primary-shot (car (last shots))))
+                                               (sort (directory-files-recursively
+                                                      shot-dir "\\.\\(png\\|jpe?g\\|webp\\)\\'")
+                                                     #'string<)))
+                                  (shots (delete-dups
+                                          (append (when explicit-shot (list explicit-shot))
+                                                  dir-shots)))
+                                  (primary-shot (car (last shots)))
+                                  (extra-shots (butlast shots)))
                              (when (buffer-live-p out-buf)
                                (kill-buffer out-buf))
                              (when (and primary-shot (macher-agent-valid-context-p ctx))
@@ -125,8 +149,15 @@
                                             "SUCCESS: Playwright Deno script completed.\n"
                                           (format "ERROR: Playwright Deno script exited with code %d.\n" code))
                                         (if primary-shot
-                                            (format "Screenshot '%s' queued into visual context.\n"
-                                                    (file-relative-name primary-shot canon-sandbox))
+                                            (concat
+                                             (format "Screenshot '%s' queued into visual context.\n"
+                                                     (file-relative-name primary-shot canon-sandbox))
+                                             (if extra-shots
+                                                 (format "Note: %d additional screenshot(s) were written (%s); only the last screenshot is attached to visual context per invocation.\n"
+                                                         (length extra-shots)
+                                                         (mapconcat (lambda (p) (file-relative-name p canon-sandbox))
+                                                                    extra-shots ", "))
+                                               ""))
                                           "No screenshots were found in PLAYWRIGHT_SCREENSHOT_DIR or screenshot_path.\n")
                                         "\n=== DENO OUTPUT ===\n"
                                         raw-out)))))))
